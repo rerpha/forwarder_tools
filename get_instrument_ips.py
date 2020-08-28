@@ -9,7 +9,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="get hostnames for the output of CS:INSTLIST in order to get all instrument IPs"
+        description="get hostnames for the output of CS:INSTLIST in order to get all instrument IPs in a suitable format to put in CA_ADDR_LIST"
     )
     parser.add_argument("filename")
     parser.add_argument(
