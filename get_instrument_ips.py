@@ -26,4 +26,4 @@ if __name__ == "__main__":
             host_ip = socket.gethostbyname(full_hostname)
             hosts.append(host_ip)
 
-    print(str(hosts).strip("[").strip("]").replace("'", ""))
+    print(str(hosts).strip("[").strip("]").replace("'", "").replace(",", ""))
