@@ -40,3 +40,4 @@ if __name__ == "__main__":
                     print(f"creating {topic_to_check}")
                     new_topic = NewTopic(topic_to_check, num_partitions=1)
                     admin_client.create_topics([new_topic])
+    admin_client.poll(10)
