@@ -13,5 +13,12 @@ if __name__ == "__main__":
     broker = args.broker
     conf = {"bootstrap.servers": broker}
     admin_client = AdminClient(conf)
-    admin_client.delete_topics([args.topic])
+    fs = admin_client.delete_topics([args.topic])
+    for topic, f in fs.items():
+        try:
+            f.result()  # The result itself is None
+            print("Topic {} deleted".format(topic))
+        except Exception as e:
+            print("Failed to delete topic {}: {}".format(topic, e))
+
     admin_client.poll(1)
