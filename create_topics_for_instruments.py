@@ -11,7 +11,7 @@ TOPICS_PER_INST = [
     "_runInfo",
     "_monitorHistograms",
     "_detSpecMap",
-    "_writerStatus"
+    "_writerStatus",
 ]
 
 if __name__ == "__main__":
