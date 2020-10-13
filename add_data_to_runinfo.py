@@ -5,6 +5,8 @@ from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import Consumer, Producer
 from streaming_data_types import deserialise_pl72, serialise_pl72
 
+CHILDREN = "children"
+
 INST_NAMES = [
     "LARMOR",
     "ALF",
@@ -45,7 +47,7 @@ def _create_group(name, nx_class):
     return {
         "type": "group",
         "name": name,
-        "children": [],
+        CHILDREN: [],
         "attributes": [{"name": "NX_class", "values": nx_class}],
     }
 
@@ -54,11 +56,18 @@ def _create_dataset(name, values):
     return {"type": "dataset", "name": name, "attributes": [], "values": values}
 
 
+def __add_source_info(instrument):
+    source = _create_group("source", "NXsource")
+    source[CHILDREN].append(_create_dataset("name", "ISIS"))
+    source[CHILDREN].append(_create_dataset("probe", "neutrons"))
+    source[CHILDREN].append(_create_dataset("type", "Pulsed Neutron Source"))
+    instrument[CHILDREN].append(source)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Amend data to runinfo messages")
     parser.add_argument("-b", "--broker")
     args = parser.parse_args()
-
     broker = args.broker
     conf = {"bootstrap.servers": broker, "group.id": str(uuid.uuid4())}
     admin_client = AdminClient(conf)
@@ -80,12 +89,21 @@ if __name__ == "__main__":
             structure = des.nexus_structure
             entry = _create_group("raw_data_1", "NXentry")
             detector_1 = _create_group("detector_1", "NXdetector")
-            detector_1["children"].append(structure["entry"]["events"])
-            entry["children"].append(detector_1)
-            entry["children"].append(_create_dataset("beamline", instrument_name))
-            entry["raw_data_1"].append(
+            detector_1[CHILDREN].append(structure["entry"]["events"])
+            instrument = _create_group("instrument", "NXinstrument")
+
+            __add_source_info(instrument)
+
+            entry[CHILDREN].append(detector_1)
+            entry[CHILDREN].append(instrument)
+            entry[CHILDREN].append(_create_dataset("beamline", instrument_name))
+            entry[CHILDREN].append(
                 _create_dataset("name", instrument_name)
             )  # these seem to be the same
+
+            for i in range(8):
+                monitor = _create_group(f"monitor_{i}", "NXmonitor")
+                entry[CHILDREN].append(monitor)
 
             new_run_message = serialise_pl72(
                 filename=des.filename,
