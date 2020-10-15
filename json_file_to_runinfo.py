@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
         blob = serialise_pl72(
             nexus_structure=json.dumps(data),
-            filename=f"{filename.strip('.json')[0]}.nxs",
+            filename=f"{filename.split('.json')[0]}.nxs",
             job_id=f"{uuid.uuid4()}",
         )
         prod.produce(topic, value=blob)
