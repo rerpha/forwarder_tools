@@ -1,0 +1,83 @@
+{
+    "children":
+        [{
+        "type": "group",
+        "name" : "entry",
+        "children" :
+            [{
+            "type": "group",
+            "name" : "events",
+            "children" :
+                [{
+                "type": "stream",
+                "stream" :
+                    {
+                    "topic": "MERLIN_events",
+                    "source" : "ISISICP",
+                    "writer_module" : "ev42"
+                    }
+                }]
+            },{
+            "type": "group",
+            "name": "monitor_histogram",
+            "children" :
+                [{
+                "type": "stream",
+                "stream" :
+                    {
+                    "topic": "MERLIN_monitorHistograms",
+                    "source" : "monitor_9",
+                    "writer_module" : "hs00",
+                      "data_type": "uint64",
+                      "edge_type": "double",
+                      "error_type": "double",
+                      "shape": [
+                        {        "size": 1,
+        "label": "period_index",
+        "unit": "ms",
+        "edges": [0.5, 1.5],
+        "dataset_name": "period_index"},
+                        {        "size": 1,
+        "label": "spectrum_index",
+        "unit": "ms",
+        "edges": [69640.5, 69641.5],
+        "dataset_name": "spectrum_index"},
+                        {
+                                  "size": 19995,
+        "label": "time_of_flight",
+        "unit": "ms",
+        "edges": [],
+        "dataset_name": "time_of_flight"
+                        }
+                      ]
+                    }
+                }]
+            },
+              {
+            "type": "group",
+            "name": "selog",
+            "children" :
+                [{
+                  "type": "group",
+            "name": "Fermi_Crate_Temp",
+            "children" :[
+              {
+                "type": "stream",
+                "stream": {
+                  "writer_module": "f142",
+                  "source": "IN:MERLIN:CS:SB:Fermi_Crate_Temp",
+                  "topic":"MERLIN_sampleEnv",
+                  "type": "double"
+                }
+              }
+            ]
+                }]
+            }
+            ],
+            "attributes":
+                [{
+                "name": "NX_class",
+                "values" : "NXentry"
+                }]
+        }]
+}
