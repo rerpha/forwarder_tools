@@ -12,6 +12,7 @@ TOPICS_PER_INST = [
     "_monitorHistograms",
     "_detSpecMap",
     "_writerStatus",
+    "_areaDetector"
 ]
 
 if __name__ == "__main__":
