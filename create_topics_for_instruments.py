@@ -34,12 +34,13 @@ if __name__ == "__main__":
 
     with open(args.filename) as file:
         json = json.load(file)
-        for item in json:
-            inst_name = item["name"]
-            for topic_suffix in TOPICS_PER_INST:
-                topic_to_check = inst_name + topic_suffix
-                if topic_to_check not in topics_list:
-                    print(f"creating {topic_to_check}")
-                    new_topic = NewTopic(topic_to_check, num_partitions=1)
-                    admin_client.create_topics([new_topic])
+    for item in json:
+        inst_name = item["name"]
+        for topic_suffix in TOPICS_PER_INST:
+            print(inst_name)
+            topic_to_check = inst_name + topic_suffix
+            if topic_to_check not in topics_list:
+                print(f"creating {topic_to_check}")
+                new_topic = NewTopic(topic_to_check, num_partitions=1)
+                admin_client.create_topics([new_topic])
     admin_client.poll(10)
