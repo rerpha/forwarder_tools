@@ -1,4 +1,5 @@
 import argparse
+import json
 import uuid
 
 from confluent_kafka.admin import AdminClient
@@ -151,7 +152,7 @@ if __name__ == "__main__":
             instrument_name = message_topic.split("_runInfo")[0]
             des = deserialise_pl72(value)
 
-            structure = des.nexus_structure
+            structure = json.loads(des.nexus_structure)
             entry = _create_group("raw_data_1", "NXentry")
 
             # Events
