@@ -64,6 +64,64 @@ def __add_source_info(instrument):
     instrument[CHILDREN].append(source)
 
 
+def __get_spectrum_index_edges(monitor_num: int):
+    edges = {
+        1: (69632.5, 69633.5),
+        2: (69633.5, 69634.5),
+        3: (69634.5, 69635.5),
+        4: (69635.5, 69636.5),
+        5: (69636.5, 69637.5),
+        6: (69637.5, 69638.5),
+        7: (69638.5, 69639.5),
+        8: (69639.5, 69640.5),
+        9: (69640.5, 69641.5),
+    }
+    return edges[monitor_num]
+
+
+def _create_hs00_stream(
+    inst_name: str,
+    monitor_num: int,
+    data_type: str = "uint64",
+    edge_type: str = "double",
+    error_type: str = "double",
+):
+    return {
+        "type": "stream",
+        "stream": {
+            "topic": f"{inst_name}_monitorHistograms",
+            "source": f"monitor_{monitor_num}",
+            "writer_module": "hs00",
+            "data_type": data_type,
+            "edge_type": edge_type,
+            "error_type": error_type,
+            "shape": [
+                {
+                    "size": 1,
+                    "label": "period_index",
+                    "unit": "ms",
+                    "edges": [0.5, 1.5],
+                    "dataset_name": "period_index",
+                },
+                {
+                    "size": 1,
+                    "label": "spectrum_index",
+                    "unit": "ms",
+                    "edges": __get_spectrum_index_edges(monitor_num),
+                    "dataset_name": "spectrum_index",
+                },
+                {
+                    "size": 19995,
+                    "label": "time_of_flight",
+                    "unit": "ms",
+                    "edges": [float(i) for i in range(5, 20001)],
+                    "dataset_name": "time_of_flight",
+                },
+            ],
+        },
+    }
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Amend data to runinfo messages")
     parser.add_argument("-b", "--broker")
@@ -73,7 +131,8 @@ if __name__ == "__main__":
     admin_client = AdminClient(conf)
     cons = Consumer(conf)
     prod = Producer(conf)
-    topics = [topic + "_runInfo" for topic in INST_NAMES]
+    # topics = [topic + "_runInfo" for topic in INST_NAMES]
+    topics = ["MERLIN_runInfo"]
     print(f"subscribing to {topics}")
     cons.subscribe(topics=topics)
     while True:
@@ -82,13 +141,21 @@ if __name__ == "__main__":
             msg = cons.poll(1.0)
             if msg is None:
                 continue
+            value = msg.value()
+            schema = value[4:8].decode("utf-8")
+            if schema != "pl72":  # check schema here
+                print(f"received message with schema {schema}, continuing... ")
+                continue
+
             message_topic = msg.topic()
             instrument_name = message_topic.split("_runInfo")[0]
-            des = deserialise_pl72(msg.value())
+            des = deserialise_pl72(value)
 
             structure = des.nexus_structure
             entry = _create_group("raw_data_1", "NXentry")
-            detector_1 = _create_group("detector_1", "NXdetector")
+
+            # Events
+            detector_1 = _create_group("detector_1_events", "NXdetector")
             detector_1[CHILDREN].append(structure["entry"]["events"])
             instrument = _create_group("instrument", "NXinstrument")
 
@@ -101,8 +168,13 @@ if __name__ == "__main__":
                 _create_dataset("name", instrument_name)
             )  # these seem to be the same
 
+            # TODO: sample env
+            selog = _create_group("selog", "IXselog")
+            entry[CHILDREN].append(selog)
+
             for i in range(8):
                 monitor = _create_group(f"monitor_{i}", "NXmonitor")
+                monitor[CHILDREN].append(_create_hs00_stream(instrument_name, i))
                 entry[CHILDREN].append(monitor)
 
             new_run_message = serialise_pl72(
@@ -114,9 +186,10 @@ if __name__ == "__main__":
                 instrument_name=des.instrument_name,
                 broker=des.broker,
                 nexus_structure=str(entry),
-                job_id=des.job_id
+                job_id=des.job_id,
             )
             prod.produce(topic="ALL_runInfo", value=new_run_message)
+            prod.poll(1)
             print(f"produced: {entry}")
         except KeyboardInterrupt:
             break
