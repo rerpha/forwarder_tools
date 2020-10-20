@@ -128,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--broker")
     args = parser.parse_args()
     broker = args.broker
-    conf = {"bootstrap.servers": broker, "group.id": str(uuid.uuid4())}
+    conf = {"bootstrap.servers": broker, "group.id": str(uuid.uuid4()), 'message.max.bytes': 5000000}
     admin_client = AdminClient(conf)
     cons = Consumer(conf)
     prod = Producer(conf)
@@ -186,7 +186,7 @@ if __name__ == "__main__":
                 service_id=des.service_id,
                 instrument_name=des.instrument_name,
                 broker=des.broker,
-                nexus_structure=str(entry),
+                nexus_structure=json.dumps(entry),
                 job_id=des.job_id,
             )
             prod.produce(topic="ALL_runInfo", value=new_run_message)
