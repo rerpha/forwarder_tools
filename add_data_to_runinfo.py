@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
             # Events
             detector_1 = _create_group("detector_1_events", "NXdetector")
-            detector_1[CHILDREN].append(structure["entry"]["events"])
+            detector_1[CHILDREN] = structure["children"][0]["children"]
             instrument = _create_group("instrument", "NXinstrument")
 
             __add_source_info(instrument)
@@ -173,7 +173,7 @@ if __name__ == "__main__":
             selog = _create_group("selog", "IXselog")
             entry[CHILDREN].append(selog)
 
-            for i in range(8):
+            for i in range(1,10):
                 monitor = _create_group(f"monitor_{i}", "NXmonitor")
                 monitor[CHILDREN].append(_create_hs00_stream(instrument_name, i))
                 entry[CHILDREN].append(monitor)
