@@ -181,7 +181,7 @@ if __name__ == "__main__":
             new_run_message = serialise_pl72(
                 filename=des.filename,
                 start_time=des.start_time,
-                stop_time=des.stop_time,
+                stop_time=des.stop_time if des.stop_time is not None else None,
                 run_name=des.run_name,
                 service_id=des.service_id,
                 instrument_name=des.instrument_name,
