@@ -144,6 +144,11 @@ if __name__ == "__main__":
                 continue
             value = msg.value()
             schema = value[4:8].decode("utf-8")
+
+            if schema == "6s4t":
+                prod.produce(topic="ALL_runInfo", value=value)
+                continue
+
             if schema != "pl72":  # check schema here
                 print(f"received message with schema {schema}, continuing... ")
                 continue
