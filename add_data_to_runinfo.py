@@ -1,10 +1,12 @@
 import argparse
 import json
 import uuid
+import zlib
 
 from confluent_kafka.admin import AdminClient
 from confluent_kafka.cimpl import Consumer, Producer
 from streaming_data_types import deserialise_pl72, serialise_pl72
+from epics import caget
 
 CHILDREN = "children"
 
@@ -123,12 +125,55 @@ def _create_hs00_stream(
     }
 
 
+def _create_f142_stream(inst_name, block_name):
+    return {
+        "type": "stream",
+        "stream": {
+            "writer_module": "f142",
+            "topic": f"{inst_name}_sampleEnv",
+            "source": f"IN:{inst_name}:CS:SB:{block_name}",
+            "type": "double",  # todo: make this dynamic by cainfo'ing
+        },
+    }
+
+
+def dehex_and_decompress(value):
+    """
+    Dehex and decompress a string and return it
+    :param value: compressed hexed string
+    :return: value as a strinnng
+    """
+
+    try:
+        # If it comes as bytes then cast to string
+        value = value.decode("utf-8")
+    except AttributeError:
+        pass
+
+    return zlib.decompress(bytes.fromhex(value)).decode("utf-8")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Amend data to runinfo messages")
     parser.add_argument("-b", "--broker")
     args = parser.parse_args()
     broker = args.broker
-    conf = {"bootstrap.servers": broker, "group.id": str(uuid.uuid4()), 'message.max.bytes': 5000000}
+
+    conf = {
+        "bootstrap.servers": broker,
+        "group.id": str(uuid.uuid4()),
+        "message.max.bytes": 5000000,
+    }
+
+    block_list_hexed = caget(f"IN:MERLIN:CS:BLOCKSERVER:BLOCKNAMES", as_string=True)
+    block_list = (
+        dehex_and_decompress(block_list_hexed)
+        .replace("[", "")
+        .replace("]", "")
+        .replace('"', "")
+        .split(sep=",")
+    )
+
     admin_client = AdminClient(conf)
     cons = Consumer(conf)
     prod = Producer(conf)
@@ -163,10 +208,10 @@ if __name__ == "__main__":
             # Events
             detector_1 = _create_group("detector_1_events", "NXdetector")
             detector_1[CHILDREN] = structure["children"][0]["children"]
+
+            # Metadata
             instrument = _create_group("instrument", "NXinstrument")
-
             __add_source_info(instrument)
-
             entry[CHILDREN].append(detector_1)
             entry[CHILDREN].append(instrument)
             entry[CHILDREN].append(_create_dataset("beamline", instrument_name))
@@ -174,11 +219,24 @@ if __name__ == "__main__":
                 _create_dataset("name", instrument_name)
             )  # these seem to be the same
 
-            # TODO: sample env
+            # Sample Env
             selog = _create_group("selog", "IXselog")
             entry[CHILDREN].append(selog)
+            block_list_hexed = caget(
+                f"IN:{instrument_name}:CS:BLOCKSERVER:BLOCKNAMES", as_string=True
+            )
+            block_list = (
+                dehex_and_decompress(block_list_hexed)
+                .replace("[", "")
+                .replace("]", "")
+                .replace('"', "")
+                .split(sep=",")
+            )
+            for block in block_list:
+                selog[CHILDREN].append(_create_f142_stream(instrument_name, block))
 
-            for i in range(1,10):
+            # Histograms
+            for i in range(1, 10):
                 monitor = _create_group(f"monitor_{i}", "NXmonitor")
                 monitor[CHILDREN].append(_create_hs00_stream(instrument_name, i))
                 entry[CHILDREN].append(monitor)
