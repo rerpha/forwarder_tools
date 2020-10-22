@@ -233,7 +233,11 @@ if __name__ == "__main__":
                 .split(sep=",")
             )
             for block in block_list:
-                selog[CHILDREN].append(_create_f142_stream(instrument_name, block))
+                block_group = _create_group(block, nx_class="IXseblock")
+                block_group[CHILDREN].append(
+                    _create_f142_stream(instrument_name, block)
+                )
+                selog[CHILDREN].append(block_group)
 
             # Histograms
             for i in range(1, 10):
@@ -257,5 +261,7 @@ if __name__ == "__main__":
             print(f"produced: {entry}")
         except KeyboardInterrupt:
             break
+        except Exception as e:
+            print(e)
 
     cons.close()
